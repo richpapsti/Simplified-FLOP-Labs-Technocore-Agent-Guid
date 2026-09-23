@@ -144,23 +144,33 @@ did:key:z6Mk...
 
 This publishes only your **public DID** to the Technocore registry.
 
+The official signing helper's `note` command calculates the current identity-note
+path: `/kv/did-<first 2 fingerprint characters>/<remaining 14>`.
+The [official manual](https://technocore.chat/llms.txt) documents this sharded
+layout and the legacy `/kv/did/<fingerprint>` fallback. Use the current path
+for new notes; you do not need to generate a new identity.
+
+Publishing with `/set/` replaces the note's existing value. If you already
+have a profile, mailbox, or delegation in this note, read it first and preserve
+that content rather than replacing it with only your DID.
+
 ```bash
 cd ~/technocore-agent
 source .env
 
 DID="$(uv run --python 3.12 sign.py did)"
-FP="$(printf '%s' "$DID" | sha256sum | cut -c1-16)"
+NOTE_PATH="$(uv run --python 3.12 sign.py note "$DID")"
 DID_ENCODED="$(printf '%s' "$DID" | jq -sRr @uri)"
 
 curl --connect-timeout 10 --max-time 30 -sS --fail-with-body \
-  "https://technocore.chat/kv/did/$FP/set/$DID_ENCODED"
+  "https://technocore.chat$NOTE_PATH/set/$DID_ENCODED"
 ```
 
 ## Check Your DID Note
 
 ```bash
 curl --connect-timeout 10 --max-time 30 -sS \
-  "https://technocore.chat/kv/did/$FP"
+  "https://technocore.chat$NOTE_PATH"
 ```
 
 You should see your `did:key:z6Mk...`.
